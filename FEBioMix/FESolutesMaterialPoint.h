@@ -50,6 +50,9 @@ public:
 
 public:
 	double Osmolarity() const;
+        // invasive preCICE code
+        void get_sourceterms(std::vector<double> &chat);
+        void get_tangents(std::vector<std::vector<double>> &dchatdc);
 	
 public:
 	// solutes material data
@@ -89,5 +92,9 @@ public:
     std::vector<int>     m_ide;      //!< solute IDs on external side
     std::vector<int>     m_idi;      //!< solute IDs on internal side
     std::vector<bool>   m_bsb;  //!< flag indicating that solute is solid-bound
+    //preCICE invasive code parts
+    double m_sourceterm;
+    std::vector<double> m_tangents;
+
 };
 

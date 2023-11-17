@@ -641,7 +641,8 @@ void FEMultiphasicSolidDomain::ElementInternalForce(FESolidElement& el, vector<d
             for (isol=0; isol<nsol; ++isol)
                 chat[isol] += phiw*zhat*pri->m_v[isol];
         }
-        
+        spt.get_sourceterms(chat);
+
         for (i=0; i<neln; ++i)
         {
             // calculate global gradient of shape functions

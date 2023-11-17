@@ -128,6 +128,8 @@ SOFTWARE.*/
 #include "FEMultiphasicAnalysis.h"
 #include <FECore/FEModelUpdate.h>
 #include <FECore/FETimeStepController.h>
+//preCICE
+#include "PreciceCallback.h"
 
 //-----------------------------------------------------------------------------
 const char* FEBioMix::GetVariableName(FEBioMix::FEBIOMIX_VARIABLE var)
@@ -156,6 +158,7 @@ void FEBioMix::InitModule()
 	REGISTER_FECORE_CLASS(FECarterHayes     , "Carter-Hayes");
 	REGISTER_FECORE_CLASS(FEPorousNeoHookean, "porous neo-Hookean");
 	REGISTER_FECORE_CLASS(FEMixtureNormalTraction, "normal_traction");
+	REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallback, FECALLBACK_ID, "precice_callback");
 
 //======================================================================
 // setup the "biphasic" module

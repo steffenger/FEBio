@@ -370,6 +370,7 @@ else()
     target_link_libraries(febio4 -ldl)
 endif()
 
+find_package(precice)
 # Link Libraries into FEBioLib
 target_link_libraries(numcore PRIVATE fecore)
 target_link_libraries(febioxml PRIVATE fecore)
@@ -377,7 +378,7 @@ target_link_libraries(febiotest PRIVATE fecore)
 target_link_libraries(febiorve PRIVATE fecore febiomech febioxml febioplot xml)
 target_link_libraries(febioplot PRIVATE fecore)
 target_link_libraries(febioopt PRIVATE fecore febioxml xml)
-target_link_libraries(febiomix PRIVATE febiomech fecore)
+target_link_libraries(febiomix PRIVATE febiomech fecore precice::precice)
 target_link_libraries(febiomech PRIVATE fecore)
 target_link_libraries(febiofluid PRIVATE febiomix febiomech fecore)
 target_link_libraries(feimglib PRIVATE fecore)
@@ -411,6 +412,7 @@ else()
         
         target_link_libraries(febio4 -static-libstdc++ -static-libgcc)
     endif()
+
 
 	target_link_libraries(febio4 -Wl,--start-group fecore febiolib -Wl,--end-group)
     
