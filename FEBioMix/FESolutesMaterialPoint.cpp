@@ -29,6 +29,7 @@ SOFTWARE.*/
 #include "stdafx.h"
 #include "FESolutesMaterialPoint.h"
 #include "FECore/DumpStream.h"
+#include <iostream>
 using namespace std;
 
 //=============================================================================
@@ -96,6 +97,8 @@ void FESolutesMaterialPoint::Init()
     m_bsb.clear();
     m_sourceterm = 0;
     m_tangents.clear();
+    //m_sourceterm = 0;
+    //m_sourceterm2 = 0;
     
 	// don't forget to initialize the base class
 	FEMaterialPointData::Init();
@@ -133,10 +136,13 @@ double FESolutesMaterialPoint::Osmolarity() const
 
 void FESolutesMaterialPoint::get_sourceterms(vector<double> &chat) {
   chat[0] = m_sourceterm;
+  chat[1] = m_sourceterm2;
+  std::cout << m_sourceterm << std::endl;
+  std::cout << m_sourceterm2 << std::endl;
   //chat[1] = m_sourceterms[1];
 }
 
 void FESolutesMaterialPoint::get_tangents(vector<vector<double>> &dchatdc) {
-  dchatdc[0][0] = m_tangents[0];
-  dchatdc[1][1] = m_tangents[1];
+  dchatdc[0][0] = m_tangent1;
+  dchatdc[1][1] = m_tangent2;
 }

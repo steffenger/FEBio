@@ -6,6 +6,107 @@
 #include "FESolutesMaterialPoint.h"
 #include <utility>
 
+//try template function to simplify read and write function
+template <typename T>
+void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO) {
+// Read data from precice
+    	    std::vector<double> data(this->numberOfVerticies);
+    	    const int dataID = this->precice->getDataID(MACRO, this->meshID); 
+    	    precice->readBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+
+    	    // Write data to febio
+    	    int counter = 0;
+    	    FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
+    	    for (int i = 0; i < elementSet->Elements(); i++) {
+    	    	    FEElement &element = elementSet->Element(i);
+    	    	    for (int j = 0; j < element.GaussPoints(); j++) {
+    	    	    	    FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
+			auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
+			if (solute == nullptr) {
+    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
+				}
+			solute->*member = data[counter];
+    	    	    	    counter++;
+    	    	    	}
+    	    	}
+
+}
+
+template <typename T>
+void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO) {
+// Read data from precice
+    	    std::vector<double> data(this->numberOfVerticies);
+    	    const int dataID = this->precice->getDataID(MACRO, this->meshID); 
+    	    precice->readBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+
+    	    // Write data to febio
+    	    int counter = 0;
+    	    FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
+    	    for (int i = 0; i < elementSet->Elements(); i++) {
+    	    	    FEElement &element = elementSet->Element(i);
+    	    	    for (int j = 0; j < element.GaussPoints(); j++) {
+    	    	    	    FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
+			auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
+			if (solute == nullptr) {
+    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
+				}
+			(solute->*member)[index] = data[counter];
+    	    	    	    counter++;
+    	    	    	}
+    	    	}
+
+}
+
+template <typename T>
+void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member,  const std::string MACRO) {
+        // Read data from febio
+	    std::vector<double> data(this->numberOfVerticies);
+        int counter = 0;
+        FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
+        for (int i = 0; i < elementSet->Elements(); i++) {
+            FEElement &element = elementSet->Element(i);
+            for (int j = 0; j < element.GaussPoints(); j++) {
+                FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
+		auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
+			if (solute == nullptr) {
+    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
+				}
+		data[counter] = solute->*member;
+                counter++;
+            }
+        }
+
+	// Write data to precice
+	const int dataID = this->precice->getDataID(MACRO, this->meshID); 
+        this->precice->writeBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+
+}	
+
+template <typename T>
+void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index,  const std::string MACRO) {
+        // Read data from febio
+	    std::vector<double> data(this->numberOfVerticies);
+        int counter = 0;
+        FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
+        for (int i = 0; i < elementSet->Elements(); i++) {
+            FEElement &element = elementSet->Element(i);
+            for (int j = 0; j < element.GaussPoints(); j++) {
+                FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
+		auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
+			if (solute == nullptr) {
+    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
+				}
+		data[counter] = (solute->*member)[index];
+                counter++;
+            }
+        }
+
+	// Write data to precice
+	const int dataID = this->precice->getDataID(MACRO, this->meshID); 
+        this->precice->writeBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+
+}	
+
 // Get number of material points and their initial position
 std::pair<int, vector<double>> PreciceCallback::getRelevantMaterialPoints(FEModel *fem, const std::string &elementName) {
     	vector<double> vertexPositions;
@@ -56,7 +157,9 @@ void PreciceCallback::Init(FEModel *fem) {
     	// Finish initializing precice
     	this->precice_dt = precice->initialize();
     	this->precice->initializeData();
+        
 
+		//WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::volume, WRITE_DATA3);
     	feLogInfo("Finished PreciceCallback::Init");
 }
 
@@ -65,6 +168,11 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
 
     	if (nreason == CB_INIT) {
     	    	this->Init(&fem);
+            //communicate the initialization variables here?
+            //WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::volume, WRITE_DATA3);
+			//WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::norm_position, WRITE_DATA);
+
+
     	} else if (nreason == CB_UPDATE_TIME) {
     	    	if (this->precice->isActionRequired(this->cowic)) {
     	    	    	feLogInfo("CB_UPDATE_TIME - Saving Checkpoint\n");
@@ -72,15 +180,19 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
     	    	    	// this uses dmp.open(true,true) which leads to the time controller not beeing serialized
     	    	    	// Also setting dmp.open(true,false) leads to segfault dont know why yet
     	    	    	// Switch time controller
-    	    	    	delete this->checkpointTimeStepController;
+    	    	    	/*delete this->checkpointTimeStepController;
     	    	    	this->checkpointTimeStepController = fem.GetCurrentStep()->m_timeController;
     	    	    	FETimeStepController *newTimeController = new FETimeStepController(&fem);
+
     	    	    	newTimeController->SetAnalysis(fem.GetCurrentStep());
+
+						//warning this seems not to work for complex timestepping
     	    	    	newTimeController->CopyFrom(this->checkpointTimeStepController);
-    	    	    	fem.GetCurrentStep()->m_timeController = newTimeController;
+    	    	    	//fem.GetCurrentStep()->m_timeController = newTimeController;
+						
     	    	    	this->checkpoint_time = fem.GetTime().currentTime;
     	    	    	this->dmp.clear();
-    	    	    	fem.Serialize(this->dmp);
+    	    	    	fem.Serialize(this->dmp);*/
     	    	    	this->precice->markActionFulfilled(this->cowic);
     	    	}
     	    	// advance timestep
@@ -92,21 +204,21 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
     	    	if (this->precice->isCouplingOngoing()) {
     	    	    	// Read and write precice data
     	    	    	this->ReadData(&fem);
-    	    	    	//this->WriteData(&fem);
+    	    	    	this->WriteData(&fem);
     	    	    	this->precice_dt = this->precice->advance(this->dt);
     	    	    	if (this->precice->isActionRequired(this->coric)) {
     	    	    	    	feLogInfo("CB_MAJOR_ITERS - Restoring Checkpoint\n");
     	    	    	    	// Restore
     	    	    	    	// taken from FEAnalysis.cpp Line 475 ff
     	    	    	    	// restore the previous state
-    	    	    	    	this->dmp.Open(false, true); // This does not restore the time controller only if bshallow is false
+    	    	    	    	/*this->dmp.Open(false, true); // This does not restore the time controller only if bshallow is false
     	    	    	    	fem.Serialize(this->dmp);
     	    	    	    	FETimeStepController *newTimeController = new FETimeStepController(&fem);
     	    	    	    	newTimeController->SetAnalysis(fem.GetCurrentStep());
     	    	    	    	newTimeController->CopyFrom(this->checkpointTimeStepController);
     	    	    	    	fem.GetCurrentStep()->m_timeController = newTimeController;
     	    	    	    	fem.GetTime().currentTime = this->checkpoint_time;
-    	    	    	    	fem.GetCurrentStep()->m_ntimesteps--; // Decrease number of steps because it gets increased right after this
+    	    	    	    	fem.GetCurrentStep()->m_ntimesteps--; // Decrease number of steps because it gets increased right after this*/
     	    	    	    	this->precice->markActionFulfilled(this->coric);
     	    	    	}
     	    	}
@@ -122,27 +234,12 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
 void PreciceCallback::ReadData(FEModel *fem) {
     	if (this->precice->isReadDataAvailable()) {
     		feLogInfo("PreciceCallback::ReadData");
+                
+				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm, READ_DATA);
+				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm2, READ_DATA2);
+				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent1, READ_DATA3);
+				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent2, READ_DATA4);
 
-    	    	// Read data from precice
-    	    	std::vector<double> data(this->numberOfVerticies);
-    	    	const int dataID = this->precice->getDataID(READ_DATA, this->meshID); 
-    	    	precice->readBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
-
-    	    	// Write data to febio
-    	    	int counter = 0;
-    	    	FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-    	    	for (int i = 0; i < elementSet->Elements(); i++) {
-    	    	    	FEElement &element = elementSet->Element(i);
-    	    	    	for (int j = 0; j < element.GaussPoints(); j++) {
-    	    	    	    	FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-				auto elastic = materialPoint->ExtractData<FESolutesMaterialPoint>();
-				if (elastic == nullptr) {
-    	    				throw FEException("MaterialPoint is not an instance of DiHuMaterialPoint");
-				}
-				elastic->m_sourceterm = data[counter];
-    	    	    	    	counter++;
-    	    	    	}
-    	    	}
     		feLogInfo("Finished PreciceCallback::ReadData");
     	}
 }
@@ -153,24 +250,9 @@ void PreciceCallback::WriteData(FEModel *fem) {
     	feLogInfo("PreciceCallback::WriteData");
 
 	// Read data from febio
-	std::vector<double> data(this->numberOfVerticies * this->dimensions);
-        int counter = 0;
-        FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-        for (int i = 0; i < elementSet->Elements(); i++) {
-            FEElement &element = elementSet->Element(i);
-            for (int j = 0; j < element.GaussPoints(); j++) {
-                FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-		auto rt = materialPoint->m_rt;
-		data[counter*dimensions] = rt.x;
-		data[counter*dimensions + 1] = rt.y;
-		data[counter*dimensions + 2] = rt.z;
-                counter++;
-            }
-        }
+	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 0, WRITE_DATA);
+	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 1, WRITE_DATAP);
 
-	// Write data to precice
-	const int dataID = this->precice->getDataID(WRITE_DATA, this->meshID); 
-        this->precice->writeBlockVectorData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
-    	feLogInfo("Finished PreciceCallback::WriteData");
+        feLogInfo("Finished PreciceCallback::WriteData");
     }
 }

@@ -35,6 +35,7 @@ SOFTWARE.*/
 #include <FEBioMech/FEBioMech.h>
 #include <FECore/FELinearSystem.h>
 #include <FECore/sys.h>
+#include <iostream>
 
 #ifndef SQR
 #define SQR(x) ((x)*(x))
@@ -205,6 +206,15 @@ bool FEMultiphasicSolidDomain::Init()
                     }
                 }
             }
+            
+            //invasive coupling code for volume
+            FEMesh &m = *GetMesh();
+            double V = m.CurrentElementVolume(el);
+            double V_gauss = V/nint;
+            ps.volume = V_gauss;
+
+            std::cout << "V_gauss" << V_gauss << std::endl;
+            //add invasive code for protein?
         }
     }
 
@@ -1205,6 +1215,7 @@ bool FEMultiphasicSolidDomain::ElementMultiphasicStiffness(FESolidElement& el, m
                 
                 // calculate data for the kcc matrix
                 jce.assign(nsol, vec3d(0,0,0));
+                spt.get_tangents(dchatdc);
                 for (int isol=0; isol<nsol; ++isol) {
                     for (int jsol=0; jsol<nsol; ++jsol) {
                         if (jsol != isol) {
@@ -1224,12 +1235,12 @@ bool FEMultiphasicSolidDomain::ElementMultiphasicStiffness(FESolidElement& el, m
                         jce[jsol] += jc[isol][jsol]*z[isol];
                         
                         // chemical reactions
-                        dchatdc[isol][jsol] = 0;
+                        //dchatdc[isol][jsol] = 0;
                         for (int ireact=0; ireact<nreact; ++ireact) {
 							FEChemicalReaction* reacti = m_pMat->GetReaction(ireact);
-
-                            dchatdc[isol][jsol] += reacti->m_v[isol]
-                            * tangentReactionSupplyConcentration[ireact][jsol];
+                            
+                            //dchatdc[isol][jsol] += reacti->m_v[isol]
+                            //* tangentReactionSupplyConcentration[ireact][jsol];
 
                             double sum1 = 0;
                             double sum2 = 0;

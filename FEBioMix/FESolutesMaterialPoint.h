@@ -94,7 +94,12 @@ public:
     std::vector<bool>   m_bsb;  //!< flag indicating that solute is solid-bound
     //preCICE invasive code parts
     double m_sourceterm;
+	double m_sourceterm2;
     std::vector<double> m_tangents;
+	double m_tangent1;
+	double m_tangent2;
+	double volume;
+	double norm_position;
 
 };
 

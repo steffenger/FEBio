@@ -7,13 +7,27 @@
 #include <FECore/FEMesh.h>
 #include <FECore/FEAnalysis.h>
 #include <FECore/DumpMemStream.h>
+#include <FEBioMix/FESolutesMaterialPoint.h>
 #include <utility>
 
 #define PARTICIPANT_NAME "FEBio"
-#define ELEMENT_SET "DomainPart"
+#define ELEMENT_SET "CouplingDomain"
 #define MESH_NAME "FEBioMesh"
-#define READ_DATA "P_ext"
-#define WRITE_DATA "P_ext"
+#define READ_DATA "S_ext'"
+#define READ_DATA2 "P_ext'"
+#define READ_DATA3 "uec(PEX, P_ext)"
+#define READ_DATA4 "uec(SIM, S_ext)"
+
+
+#define WRITE_DATA "S_ext"
+#define WRITE_DATAP "P_ext"
+#define WRITE_DATA3 "volume"
+//#define WRITE_DATA3 "vol_point"
+//#define WRITE_DATA4 "f_fluid"
+//#define WRITE_DATA5 "f_tissue"
+//#define WRITE_DATA6 "norm_position"
+
+//add other variables
 
 class PreciceCallback : public FECallBack {
 public:
@@ -23,6 +37,10 @@ public:
     	void Init(FEModel *fem);
     	bool Execute(FEModel &fem, int nreason);
     	std::pair<int, vector<double>> getRelevantMaterialPoints(FEModel *fem, const std::string &elementName);
+		template <typename T> void ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO);
+		template <typename T> void ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO);
+		template <typename T> void WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO);
+		template <typename T> void WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO);
 
 protected:
     	precice::SolverInterface *precice = NULL;
