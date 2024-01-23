@@ -1,4 +1,4 @@
-#include <precice/SolverInterface.hpp>
+#include <precice/precice.hpp>
 #include <FECore/sdk.h>
 #include <FECore/FECallBack.h>
 #include <FECore/Callback.h>
@@ -37,27 +37,19 @@ public:
     	void Init(FEModel *fem);
     	bool Execute(FEModel &fem, int nreason);
     	std::pair<int, vector<double>> getRelevantMaterialPoints(FEModel *fem, const std::string &elementName);
-		template <typename T> void ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO);
-		template <typename T> void ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO);
-		template <typename T> void WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO);
-		template <typename T> void WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO);
+		template <typename T> void ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName);
+		template <typename T> void ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName);
+		template <typename T> void WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName);
+		template <typename T> void WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName);
 
 protected:
-    	precice::SolverInterface *precice = NULL;
+    	precice::Participant *precice = NULL;
     	int dimensions; 		// precice dimensions
-    	double dt; 			// solver timestep size
-    	double precice_dt; 		// precice timestep size 
-    	int numberOfVerticies; 		// number of vertices of muscle 
-    	int meshID;			// precice ID of the muscle mesh
+    	int numberOfVertices; 		// number of vertices of muscle
     	std::vector<int> vertexIDs;	// vertex IDs of the muscle mesh
 
-	// Checkpoints used for implicit coupling
-    	const std::string &coric = precice::constants::actionReadIterationCheckpoint();
-    	const std::string &cowic = precice::constants::actionWriteIterationCheckpoint();
-    	FEAnalysis *checkPointStep;
+		FEAnalysis *checkPointStep;
     	DumpMemStream dmp;
     	double checkpoint_time = 0;
     	FETimeStepController *checkpointTimeStepController = nullptr;
 };
-
-
