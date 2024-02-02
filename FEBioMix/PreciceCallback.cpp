@@ -13,7 +13,7 @@ void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPo
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
 			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, dt, data);
+    	    precice->readData("FEBioMesh", dataName, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -39,7 +39,7 @@ void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolu
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
 			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, dt, data);
+    	    precice->readData(MESH_NAME, dataName, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -79,7 +79,7 @@ void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialP
         }
 
 	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, data);
+    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
 
 }
 
@@ -103,7 +103,7 @@ void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESol
         }
 
 	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, data);
+    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
 
 }	
 
