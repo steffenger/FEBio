@@ -12,7 +12,7 @@ void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPo
 // Read data from precice
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
-			double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
+			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
     	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), dt, data.data());
 
     	    // Write data to febio
@@ -38,7 +38,7 @@ void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolu
 // Read data from precice
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
-			double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
+			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
     	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), dt, data.data());
 
     	    // Write data to febio
