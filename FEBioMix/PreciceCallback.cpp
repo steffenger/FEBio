@@ -13,7 +13,7 @@ void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPo
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
 			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), dt, data.data());
+    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -39,7 +39,7 @@ void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolu
     	    std::vector<double> data(this->numberOfVertices);
 			double preciceDt = precice->getMaxTimeStepSize();
 			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), dt, data.data());
+    	    precice->readData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -79,9 +79,9 @@ void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialP
         }
 
 	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), data.data());
+    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, data);
 
-}	
+}
 
 template <typename T>
 void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index,  const std::string dataName) {
@@ -103,7 +103,7 @@ void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESol
         }
 
 	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs.data(), data.data());
+    this->precice->writeData(MESH_NAME, dataName, this->numberOfVertices, this->vertexIDs, data);
 
 }	
 
@@ -151,7 +151,7 @@ void PreciceCallback::Init(FEModel *fem) {
 
     	// Initialize precice mesh
     	this->vertexIDs.resize(this->numberOfVertices);
-    	this->precice->setMeshVertices(MESH_NAME, this->numberOfVertices, vertexPositions.data(), this->vertexIDs.data());
+    	this->precice->setMeshVertices(MESH_NAME, vertexPositions, this->vertexIDs);
 
     	// Finish initializing precice
     	precice->initialize();     
