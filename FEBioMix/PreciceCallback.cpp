@@ -8,11 +8,12 @@
 
 //try template function to simplify read and write function
 template <typename T>
-void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string MACRO) {
+void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName) {
 // Read data from precice
-    	    std::vector<double> data(this->numberOfVerticies);
-    	    const int dataID = this->precice->getDataID(MACRO, this->meshID); 
-    	    precice->readBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+    	    std::vector<double> data(this->numberOfVertices);
+			double preciceDt = precice->getMaxTimeStepSize();
+			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
+    	    precice->readData("FEBioMesh", dataName, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -33,11 +34,12 @@ void PreciceCallback::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPo
 }
 
 template <typename T>
-void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string MACRO) {
+void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName) {
 // Read data from precice
-    	    std::vector<double> data(this->numberOfVerticies);
-    	    const int dataID = this->precice->getDataID(MACRO, this->meshID); 
-    	    precice->readBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+    	    std::vector<double> data(this->numberOfVertices);
+			double preciceDt = precice->getMaxTimeStepSize();
+			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
+    	    precice->readData(MESH_NAME, dataName, this->vertexIDs, dt, data);
 
     	    // Write data to febio
     	    int counter = 0;
@@ -58,9 +60,9 @@ void PreciceCallback::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolu
 }
 
 template <typename T>
-void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member,  const std::string MACRO) {
+void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName) {
         // Read data from febio
-	    std::vector<double> data(this->numberOfVerticies);
+	    std::vector<double> data(this->numberOfVertices);
         int counter = 0;
         FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
         for (int i = 0; i < elementSet->Elements(); i++) {
@@ -77,15 +79,14 @@ void PreciceCallback::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialP
         }
 
 	// Write data to precice
-	const int dataID = this->precice->getDataID(MACRO, this->meshID); 
-        this->precice->writeBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
 
-}	
+}
 
 template <typename T>
-void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index,  const std::string MACRO) {
+void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index,  const std::string dataName) {
         // Read data from febio
-	    std::vector<double> data(this->numberOfVerticies);
+	    std::vector<double> data(this->numberOfVertices);
         int counter = 0;
         FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
         for (int i = 0; i < elementSet->Elements(); i++) {
@@ -102,8 +103,7 @@ void PreciceCallback::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESol
         }
 
 	// Write data to precice
-	const int dataID = this->precice->getDataID(MACRO, this->meshID); 
-        this->precice->writeBlockScalarData(dataID, this->numberOfVerticies, this->vertexIDs.data(), data.data());
+    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
 
 }	
 
@@ -140,24 +140,21 @@ void PreciceCallback::Init(FEModel *fem) {
 	}
 
     	// initialize precice
-    	this->precice = new precice::SolverInterface(PARTICIPANT_NAME, config, 0, 1);
-    	this->dimensions = this->precice->getDimensions();
-    	
+    	this->precice = new precice::Participant(PARTICIPANT_NAME, config, 0, 1);
+    	this->dimensions = this->precice->getMeshDimensions(MESH_NAME);
+
     	// Get material point positions
     	FEMesh &femMesh = fem->GetMesh();
     	std::pair<int, vector<double>> vertexInfo = this->getRelevantMaterialPoints(fem, ELEMENT_SET);
-    	this->numberOfVerticies = vertexInfo.first;
+    	this->numberOfVertices = vertexInfo.first;
     	vector<double> vertexPositions = vertexInfo.second;
 
     	// Initialize precice mesh
-    	this->vertexIDs.resize(this->numberOfVerticies);
-    	this->meshID = this->precice->getMeshID(MESH_NAME);
-    	this->precice->setMeshVertices(this->meshID, this->numberOfVerticies, vertexPositions.data(), this->vertexIDs.data());
+    	this->vertexIDs.resize(this->numberOfVertices);
+    	this->precice->setMeshVertices(MESH_NAME, vertexPositions, this->vertexIDs);
 
     	// Finish initializing precice
-    	this->precice_dt = precice->initialize();
-    	this->precice->initializeData();
-        
+    	precice->initialize();     
 
 		//WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::volume, WRITE_DATA3);
     	feLogInfo("Finished PreciceCallback::Init");
@@ -174,7 +171,7 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
 
 
     	} else if (nreason == CB_UPDATE_TIME) {
-    	    	if (this->precice->isActionRequired(this->cowic)) {
+    	    	if (this->precice->requiresWritingCheckpoint()) {
     	    	    	feLogInfo("CB_UPDATE_TIME - Saving Checkpoint\n");
     	    	    	// Save
     	    	    	// this uses dmp.open(true,true) which leads to the time controller not beeing serialized
@@ -193,20 +190,21 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
     	    	    	this->checkpoint_time = fem.GetTime().currentTime;
     	    	    	this->dmp.clear();
     	    	    	fem.Serialize(this->dmp);*/
-    	    	    	this->precice->markActionFulfilled(this->cowic);
     	    	}
     	    	// advance timestep
-    	    	this->dt = min(this->precice_dt, fem.GetCurrentStep()->m_dt);
+				double preciceDt = precice->getMaxTimeStepSize();
+    	    	double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
     	    	feLogInfo("Current Simulation Time %f\n", fem.GetTime().currentTime);
-    	    	feLogInfo("Timestep %f\n", this->dt);
-    	    	fem.GetCurrentStep()->m_dt = this->dt;
+    	    	feLogInfo("Timestep %f\n", dt);
+    	    	fem.GetCurrentStep()->m_dt = dt;
     	} else if (nreason == CB_MAJOR_ITERS) {
     	    	if (this->precice->isCouplingOngoing()) {
     	    	    	// Read and write precice data
     	    	    	this->ReadData(&fem);
     	    	    	this->WriteData(&fem);
-    	    	    	this->precice_dt = this->precice->advance(this->dt);
-    	    	    	if (this->precice->isActionRequired(this->coric)) {
+						double dt = this->precice->getMaxTimeStepSize();
+    	    	    	this->precice->advance(dt);
+    	    	    	if (this->precice->requiresReadingCheckpoint()) {
     	    	    	    	feLogInfo("CB_MAJOR_ITERS - Restoring Checkpoint\n");
     	    	    	    	// Restore
     	    	    	    	// taken from FEAnalysis.cpp Line 475 ff
@@ -219,7 +217,6 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
     	    	    	    	fem.GetCurrentStep()->m_timeController = newTimeController;
     	    	    	    	fem.GetTime().currentTime = this->checkpoint_time;
     	    	    	    	fem.GetCurrentStep()->m_ntimesteps--; // Decrease number of steps because it gets increased right after this*/
-    	    	    	    	this->precice->markActionFulfilled(this->coric);
     	    	    	}
     	    	}
     	} else if (nreason == CB_SOLVED) {
@@ -230,29 +227,24 @@ bool PreciceCallback::Execute(FEModel &fem, int nreason) {
     	return true;
 }
 
-// Read Data from precice to febio
+// Read data from precice to febio
 void PreciceCallback::ReadData(FEModel *fem) {
-    	if (this->precice->isReadDataAvailable()) {
-    		feLogInfo("PreciceCallback::ReadData");
+    feLogInfo("PreciceCallback::ReadData");
                 
-				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm, READ_DATA);
-				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm2, READ_DATA2);
-				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent1, READ_DATA3);
-				ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent2, READ_DATA4);
+	ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm, READ_DATA);
+	ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm2, READ_DATA2);
+	ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent1, READ_DATA3);
+	ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_tangent2, READ_DATA4);
 
-    		feLogInfo("Finished PreciceCallback::ReadData");
-    	}
+    feLogInfo("Finished PreciceCallback::ReadData");
 }
 
 // Write data from precice to febio
 void PreciceCallback::WriteData(FEModel *fem) {
-    if (precice->isWriteDataRequired(dt)) {
-    	feLogInfo("PreciceCallback::WriteData");
+    feLogInfo("PreciceCallback::WriteData");
 
-	// Read data from febio
 	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 0, WRITE_DATA);
 	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 1, WRITE_DATAP);
 
-        feLogInfo("Finished PreciceCallback::WriteData");
-    }
+    feLogInfo("Finished PreciceCallback::WriteData");
 }
