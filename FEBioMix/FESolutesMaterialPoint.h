@@ -100,6 +100,8 @@ public:
 	double m_tangent2;
 	double volume;
 	double norm_position;
+	double f_fluid;
+	double f_tissue;
 
 };
 

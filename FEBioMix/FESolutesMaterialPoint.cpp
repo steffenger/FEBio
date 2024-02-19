@@ -99,6 +99,10 @@ void FESolutesMaterialPoint::Init()
     m_tangents.clear();
     //m_sourceterm = 0;
     //m_sourceterm2 = 0;
+    volume = 0;
+    norm_position= 0;
+    f_tissue = 0;
+    f_fluid = 0;
     
 	// don't forget to initialize the base class
 	FEMaterialPointData::Init();

@@ -130,6 +130,7 @@ SOFTWARE.*/
 #include <FECore/FETimeStepController.h>
 //preCICE
 #include "PreciceCallback.h"
+#include "PreciceCallbackLayer.h"
 
 //-----------------------------------------------------------------------------
 const char* FEBioMix::GetVariableName(FEBioMix::FEBIOMIX_VARIABLE var)
@@ -159,6 +160,7 @@ void FEBioMix::InitModule()
 	REGISTER_FECORE_CLASS(FEPorousNeoHookean, "porous neo-Hookean");
 	REGISTER_FECORE_CLASS(FEMixtureNormalTraction, "normal_traction");
 	REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallback, FECALLBACK_ID, "precice_callback");
+	REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallbackLayer, FECALLBACK_ID, "precice_callbackLayer");
 
 //======================================================================
 // setup the "biphasic" module
