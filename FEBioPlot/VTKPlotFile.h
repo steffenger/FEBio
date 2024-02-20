@@ -45,12 +45,19 @@ public:
 	//! see if the plot file is valid
 	bool IsValid() const override;
 
+	void Serialize(DumpStream& ar) override;
+
 private:
 	void WriteHeader();
 	void WritePoints();
 	void WriteCells();
 	void WritePointData();
 	void WriteCellData();
+
+	void WriteScalarData(std::vector<float>& val, const char* szname);
+	void WriteVectorData(std::vector<float>& val, const char* szname);
+	void WriteMat3FSData(std::vector<float>& val, const char* szname);
+	void WriteMat3FDData(std::vector<float>& val, const char* szname);
 
 private:
 	FILE*	m_fp;
