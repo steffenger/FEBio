@@ -252,7 +252,9 @@ bool PreciceCallbackLayer::Execute(FEModel &fem, int nreason) {
     	    	    	// Read and write precice data
     	    	    	this->ReadData(&fem);
     	    	    	this->WriteData(&fem);
-						double dt = this->precice->getMaxTimeStepSize();
+                        double preciceDt = precice->getMaxTimeStepSize();
+                        double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
+		        //double dt = this->precice->getMaxTimeStepSize();
     	    	    	this->precice->advance(dt);
     	    	    	if (this->precice->requiresReadingCheckpoint()) {
     	    	    	    	feLogInfo("CB_MAJOR_ITERS - Restoring Checkpoint\n");
