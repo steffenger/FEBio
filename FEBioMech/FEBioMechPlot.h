@@ -378,6 +378,7 @@ public:
 	bool Save(FEDomain& dom, FEDataStream& a) override;
 protected:
 	int		m_comp;
+	int		m_mat;
 };
 
 //-----------------------------------------------------------------------------
@@ -1064,6 +1065,20 @@ public:
 	bool Save(FEDomain& dom, FEDataStream& a);
 };
 
+class FEPlotDiscreteElementDirection : public FEPlotDomainData
+{
+public:
+	FEPlotDiscreteElementDirection(FEModel* fem) : FEPlotDomainData(fem, PLT_VEC3F, FMT_ITEM) {}
+	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
+class FEPlotDiscreteElementLength : public FEPlotDomainData
+{
+public:
+	FEPlotDiscreteElementLength(FEModel* fem) : FEPlotDomainData(fem, PLT_FLOAT, FMT_ITEM) {}
+	bool Save(FEDomain& dom, FEDataStream& a);
+};
+
 //-----------------------------------------------------------------------------
 class FEPlotDiscreteElementForce : public FEPlotDomainData
 {
@@ -1147,8 +1162,11 @@ public: FEPlotContinuousDamage_D2beta(FEModel* fem) : FEPlotContinuousDamage_(fe
 class FEPlotRVEgenerations : public FEPlotDomainData
 {
 public:
-    FEPlotRVEgenerations(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) {}
-    bool Save(FEDomain& dom, FEDataStream& a);
+    FEPlotRVEgenerations(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) { m_comp = -1; }
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
 };
 
 //-----------------------------------------------------------------------------
@@ -1156,8 +1174,23 @@ public:
 class FEPlotRVEbonds : public FEPlotDomainData
 {
 public:
-    FEPlotRVEbonds(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) {}
-    bool Save(FEDomain& dom, FEDataStream& a);
+    FEPlotRVEbonds(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) { m_comp = -1; }
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
+};
+
+//-----------------------------------------------------------------------------
+//! Weak bond recruitment ratio in reactive viscoelastic material point
+class FEPlotRVErecruitment : public FEPlotDomainData
+{
+public:
+    FEPlotRVErecruitment(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) { m_comp = -1; }
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
 };
 
 //-----------------------------------------------------------------------------
@@ -1165,8 +1198,11 @@ public:
 class FEPlotRVEstrain : public FEPlotDomainData
 {
 public:
-    FEPlotRVEstrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) {}
-    bool Save(FEDomain& dom, FEDataStream& a);
+    FEPlotRVEstrain(FEModel* pfem) : FEPlotDomainData(pfem, PLT_FLOAT, FMT_ITEM) { m_comp = -1; }
+    bool SetFilter(const char* szfilter) override;
+    bool Save(FEDomain& dom, FEDataStream& a) override;
+protected:
+    int        m_comp;
 };
 
 //-----------------------------------------------------------------------------
