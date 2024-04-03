@@ -179,6 +179,7 @@ SOFTWARE.*/
 #include "FEPointBodyForce.h"
 #include "FESurfaceAttractionBodyForce.h"
 #include "FEMassDamping.h"
+#include "FEMovingFrameLoad.h"
 
 #include "FEFacet2FacetSliding.h"
 #include "FEPeriodicBoundary.h"
@@ -247,6 +248,8 @@ SOFTWARE.*/
 #include "FEDeformableSpringDomain.h"
 #include "RigidBC.h"
 #include "FERigidNodeSet.h"
+#include "FERigidRotationVector.h"
+#include "FERigidEulerAngles.h"
 #include "FEFixedDisplacement.h"
 #include "FEFixedShellDisplacement.h"
 #include "FEFixedRotation.h"
@@ -534,6 +537,10 @@ void FEBioMech::InitModule()
     REGISTER_FECORE_CLASS(FEBondRecruitmentPower, "recruitment power");
     REGISTER_FECORE_CLASS(FEBondRecruitmentExp, "recruitment exponential");
     REGISTER_FECORE_CLASS(FEBondRecruitmentPoly, "recruitment polynomial");
+    REGISTER_FECORE_CLASS(FEBondRecruitmentLogNormal, "recruitment log-normal");
+    REGISTER_FECORE_CLASS(FEBondRecruitmentWeibull, "recruitment Weibull");
+    REGISTER_FECORE_CLASS(FEBondRecruitmentPQP, "recruitment quintic");
+    REGISTER_FECORE_CLASS(FEBondRecruitmentGamma, "recruitment gamma");
 
 	// damage cumulative distribution functions (used by damage materials)
 	REGISTER_FECORE_CLASS(FEDamageCDFSimo, "CDF Simo");
@@ -634,6 +641,7 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEPointBodyForce, "point", FECORE_EXPERIMENTAL);
 	REGISTER_FECORE_CLASS(FESurfaceAttractionBodyForce, "surface attraction");
 	REGISTER_FECORE_CLASS(FEMassDamping, "mass damping");
+	REGISTER_FECORE_CLASS(FEMovingFrameLoad, "moving frame");
 
 	//-----------------------------------------------------------------------------
 	// constraint classes
@@ -685,6 +693,8 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FERigidFixedBCNew     , "rigid_fixed"           );
 	REGISTER_FECORE_CLASS(FERigidDisplacement   , "rigid_displacement"    );
 	REGISTER_FECORE_CLASS(FERigidRotation       , "rigid_rotation"        );
+	REGISTER_FECORE_CLASS(FERigidRotationVector , "rigid_rotation_vector" );
+	REGISTER_FECORE_CLASS(FERigidEulerAngles    , "rigid_euler_angles"    );
 
 	REGISTER_FECORE_CLASS(FERigidFixedBCOld     , "rigid_fixed_old"     , 0x300);	// obsolete in 4.0
 	REGISTER_FECORE_CLASS(FERigidPrescribedOld  , "rigid_prescribed_old", 0x300);	// obsolete in 4.0
@@ -810,6 +820,8 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementStretch, "discrete element stretch");
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementElongation, "discrete element elongation");
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementPercentElongation, "discrete element percent elongation");
+	REGISTER_FECORE_CLASS(FEPlotDiscreteElementDirection, "discrete element direction");
+	REGISTER_FECORE_CLASS(FEPlotDiscreteElementLength, "discrete element length");
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementForce, "discrete element force");
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementSignedForce, "discrete element signed force");
 	REGISTER_FECORE_CLASS(FEPlotDiscreteElementStrainEnergy, "discrete element strain energy");
@@ -825,6 +837,7 @@ void FEBioMech::InitModule()
 	REGISTER_FECORE_CLASS(FEPlotContinuousDamage_D2beta, "continuous damage D2beta");
     REGISTER_FECORE_CLASS(FEPlotRVEgenerations, "RVE generations");
     REGISTER_FECORE_CLASS(FEPlotRVEbonds, "RVE reforming bonds");
+    REGISTER_FECORE_CLASS(FEPlotRVErecruitment, "RVE recruitment");
     REGISTER_FECORE_CLASS(FEPlotRVEstrain, "RVE strain");
     REGISTER_FECORE_CLASS(FEPlotStrongBondSED, "strong bond SED");
     REGISTER_FECORE_CLASS(FEPlotWeakBondSED, "weak bond SED");

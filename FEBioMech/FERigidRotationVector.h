@@ -23,25 +23,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
-
-
-
 #pragma once
-#include "FEDataGenerator.h"
-#include "fecore_type.h"
+#include "RigidBC.h"
+#include "febiomech_api.h"
 
-template<class T, class TBase> class FEConstDataGenerator : public TBase
+class FEBIOMECH_API FERigidRotationVector : public FERigidBC
 {
 public:
-	FEConstDataGenerator(FEModel* fem) : TBase(fem), m_val(0.0) {}
+	FERigidRotationVector(FEModel* fem);
+	~FERigidRotationVector();
 
-	void value(const vec3d& r, T& d) override { d = m_val; }
+	bool Init() override;
 
-	void BuildParamList() override
-	{
-		TBase::AddParameter(m_val, "value");
-	}
+	void Activate() override;
+
+	void Deactivate() override;
+
+	void InitTimeStep() override;
+
+	void Serialize(DumpStream& ar) override;
 
 private:
-	T	m_val;
+	double	m_vx, m_vy, m_vz;
+
+	FERigidPrescribedBC*	m_rc[3];
+
+	DECLARE_FECORE_CLASS();
 };
