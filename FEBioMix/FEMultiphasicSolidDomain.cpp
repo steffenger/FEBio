@@ -210,7 +210,8 @@ bool FEMultiphasicSolidDomain::Init()
             //invasive coupling code for volume
             FEMesh &m = *GetMesh();
             double V = m.CurrentElementVolume(el);
-            double V_gauss = V/nint;
+            //this is for element coupling
+            double V_gauss = V; //V/nint
             ps.volume = V_gauss;
 
             std::cout << "V_gauss" << V_gauss << std::endl;

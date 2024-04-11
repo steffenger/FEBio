@@ -8,6 +8,7 @@
 #include <FECore/FEAnalysis.h>
 #include <FECore/DumpMemStream.h>
 #include <FEBioMix/FESolutesMaterialPoint.h>
+#include <FEBioMix/PreciceCallback.h>
 #include <utility>
 
 #define PARTICIPANT_NAME "FEBio"
@@ -29,22 +30,32 @@
 
 //add other variables
 
-class PreciceCallback : public FECallBack {
+class PreciceCallbackSPT : public PreciceCallback {
+public: 
+    PreciceCallbackSPT(FEModel *pfem) : PreciceCallback(pfem) {}//, CB_INIT | CB_UPDATE_TIME | CB_MAJOR_ITERS), dmp(*pfem) {}
+    void UpdateCouplingData(FEModel *fem);
+    void ReadData(FEModel *fem);
+    void WriteData(FEModel *fem);
+    void Init(FEModel *fem);
+    bool Execute(FEModel &fem, int nreason);
+    //std::string PARTICIPANT_NAME;
+    //std::string ELEMENT_SET;
+};  
+
+/*
+class PreciceCallbackLayerCoe : public FECallBack {
 public:
-   	PreciceCallback(FEModel *pfem) : FECallBack(pfem, CB_INIT | CB_UPDATE_TIME | CB_MAJOR_ITERS), dmp(*pfem) {}
-    	virtual void ReadData(FEModel *fem);
-    	virtual void WriteData(FEModel *fem);
-    	virtual void Init(FEModel *fem);
-    	virtual bool Execute(FEModel &fem, int nreason);
+   	PreciceCallbackLayerCoe(FEModel *pfem) : FECallBack(pfem, CB_INIT | CB_UPDATE_TIME | CB_MAJOR_ITERS), dmp(*pfem) {}
+    	void ReadData(FEModel *fem);
+    	void WriteData(FEModel *fem);
+    	void Init(FEModel *fem);
+    	bool Execute(FEModel &fem, int nreason);
     	std::pair<int, vector<double>> getRelevantMaterialPoints(FEModel *fem, const std::string &elementName);
 		template <typename T> void ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName);
 		template <typename T> void ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName);
 		template <typename T> void WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName);
 		template <typename T> void WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName);
-		virtual void UpdateCouplingData(FEModel *fem);
-                void ReadBoundaryConditionData(FEModel *fem, int index, const std::string dataName);
-                void WriteBoundaryConditionData(FEModel *fem, int index, const std::string dataSet, const std::string dataName);
-                
+		void UpdateCouplingData(FEModel *fem);
 
 protected:
     	precice::Participant *precice = NULL;
@@ -56,6 +67,5 @@ protected:
     	DumpMemStream dmp;
     	double checkpoint_time = 0;
     	FETimeStepController *checkpointTimeStepController = nullptr;
-        //std::string PARTICIPANT_NAME;
-        //std::string ELEMENT_SET;
 };
+*/

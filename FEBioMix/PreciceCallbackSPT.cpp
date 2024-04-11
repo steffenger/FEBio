@@ -1,4 +1,4 @@
-#include "PreciceCallbackLayerCoe.h"
+#include "PreciceCallbackSPT.h"
 #include <FECore/log.h>
 #include <FECore/FEMaterialPoint.h>
 #include <FECore/FETimeStepController.h>
@@ -7,7 +7,8 @@
 #include "HelperProteinPosition.h"
 #include <utility>
 
-void PreciceCallbackLayerCoe::UpdateCouplingData (FEModel *fem) {
+//function to update data which is used in coupling but not updated in the solver itself
+void PreciceCallbackSPT::UpdateCouplingData (FEModel *fem) {
        //create roadrunner template for every material point
        FEMesh &mesh = fem->GetMesh();
        FEElementSet* elementSetOutflow = mesh.FindElementSet("outflow");
@@ -53,159 +54,25 @@ void PreciceCallbackLayerCoe::UpdateCouplingData (FEModel *fem) {
 }
 
 
-
-//try template function to simplify read and write function
-template <typename T>
-void PreciceCallbackLayerCoe::ReadScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName) {
-// Read data from precice
-    	    std::vector<double> data(this->numberOfVertices);
-			double preciceDt = precice->getMaxTimeStepSize();
-			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData("FEBioMesh", dataName, this->vertexIDs, dt, data);
-
-    	    // Write data to febio
-    	    int counter = 0;
-    	    FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-    	    for (int i = 0; i < elementSet->Elements(); i++) {
-    	    	    FEElement &element = elementSet->Element(i);
-                    double tmp_coe = data[counter];
-    	    	    for (int j = 0; j < element.GaussPoints(); j++) {
-    	    	    	    FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-			auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
-			if (solute == nullptr) {
-    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
-				}
-			solute->*member = tmp_coe/element.GaussPoints();
-    	    	    	}
-                counter++;
-    	    	}
-
-}
-
-template <typename T>
-void PreciceCallbackLayerCoe::ReadVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName) {
-// Read data from precice
-    	    std::vector<double> data(this->numberOfVertices);
-			double preciceDt = precice->getMaxTimeStepSize();
-			double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
-    	    precice->readData(MESH_NAME, dataName, this->vertexIDs, dt, data);
-
-    	    // Write data to febio
-    	    int counter = 0;
-    	    FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-    	    for (int i = 0; i < elementSet->Elements(); i++) {
-    	    	    FEElement &element = elementSet->Element(i);
-                    double tmp_coe = data[counter];
-    	    	    for (int j = 0; j < element.GaussPoints(); j++) {
-    	    	    	    FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-			auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
-			if (solute == nullptr) {
-    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
-				}
-			(solute->*member)[index] = tmp_coe/element.GaussPoints();
-    	    	    	}
-            counter++;
-    	    	}
-
-}
-
-template <typename T>
-void PreciceCallbackLayerCoe::WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName) {
-        // Read data from febio
-	    std::vector<double> data(this->numberOfVertices);
-        int counter = 0;
-        FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-        for (int i = 0; i < elementSet->Elements(); i++) {
-            FEElement &element = elementSet->Element(i);
-            double tmp_coe = 0;
-            for (int j = 0; j < element.GaussPoints(); j++) {
-                FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-		auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
-			if (solute == nullptr) {
-    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
-				}
-                tmp_coe += solute->*member;
-            }
-	data[counter] = tmp_coe/element.GaussPoints();
-                counter++;
-        }
-
-	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
-
-}
-
-template <typename T>
-void PreciceCallbackLayerCoe::WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index,  const std::string dataName) {
-        // Read data from febio
-	    std::vector<double> data(this->numberOfVertices);
-        int counter = 0;
-        FEElementSet *elementSet = fem->GetMesh().FindElementSet(ELEMENT_SET);
-        for (int i = 0; i < elementSet->Elements(); i++) {
-            FEElement &element = elementSet->Element(i);
-            double tmp_coe = 0;
-            for (int j = 0; j < element.GaussPoints(); j++) {
-                FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-		auto solute = materialPoint->ExtractData<FESolutesMaterialPoint>();
-			if (solute == nullptr) {
-    	    			throw FEException("MaterialPoint is not an instance of FESolutesMaterialPoint");
-				}
-                tmp_coe += (solute->*member)[index];
-            }
-		data[counter] = tmp_coe/element.GaussPoints();
-                counter++;
-        }
-
-	// Write data to precice
-    this->precice->writeData(MESH_NAME, dataName, this->vertexIDs, data);
-
-}	
-
-// Get number of material points and their initial position
-std::pair<int, vector<double>> PreciceCallbackLayerCoe::getRelevantMaterialPoints(FEModel *fem, const std::string &elementName) {
-    	vector<double> vertexPositions;
-    	int counter = 0;
-    	FEElementSet *elementSet = fem->GetMesh().FindElementSet(elementName);
-    	if (!elementSet) {
-    	    	feLogError((elementName + std::string("ElementSet not found")).c_str());
-    	    	throw FEException("ElementSet not found");
-    	}
-    	for (int i = 0; i < elementSet->Elements(); i++) {
-            FEElement &element = elementSet->Element(i);
-            vec3d com = vec3d(0, 0, 0);
-                for (int j = 0; j < element.GaussPoints(); j++) {
-    	        	// iterate over all materialpoints and add initial position to vector
-    	        	FEMaterialPoint *materialPoint = element.GetMaterialPoint(j);
-                        com.x += materialPoint->m_r0.x/element.GaussPoints();
-                        com.y += materialPoint->m_r0.y/element.GaussPoints();
-                        com.z += materialPoint->m_r0.z/element.GaussPoints();
-    	        	//vec3d coord = materialPoint->m_r0; 
-    	        	/*vertexPositions.push_back(coord.x);
-    	        	vertexPositions.push_back(coord.y);
-    	        	vertexPositions.push_back(coord.z);
-    	        	counter++;*/
-    	    	}
-            std::cout <<"x " << com.x << std::endl;
-            std::cout <<"y " << com.y << std::endl;
-            std::cout <<"z " << com.z << std::endl;
-            vertexPositions.push_back(com.x);
-            vertexPositions.push_back(com.y);
-            vertexPositions.push_back(com.z);
-            counter++;
-    	}
-    	return std::pair<int, vector<double>> (counter, vertexPositions);
-}
-
 // Initialize the precice adapter
-void PreciceCallbackLayerCoe::Init(FEModel *fem) {
+void PreciceCallbackSPT::Init(FEModel *fem) {
     	feLogInfo("PreciceCallback::Init");
-
-	// Get config path from envrironment
+        //PARTICIPANT_NAME = "FEBio";
+        //ELEMENT_SET = "CouplingDomain";
+        /*
+        //Define strings
+        const std::string PARTICIPANT_NAME = "FEBio";
+        const std::string MESH_NAME = "FEBioMesh";
+        const std::string PARTICIPANT_NAME = "CouplingDomain";
+        const char *config = "./precice-config.xml";
+        */
+        
+        // Get config path from envrironment
 	const char *config = getenv("BFP_CONFIG");
 	if (!config) {
 		config = "./precice-config.xml";
 	}
-
+        
     	// initialize precice
     	this->precice = new precice::Participant(PARTICIPANT_NAME, config, 0, 1);
     	this->dimensions = this->precice->getMeshDimensions(MESH_NAME);
@@ -227,7 +94,7 @@ void PreciceCallbackLayerCoe::Init(FEModel *fem) {
     	feLogInfo("Finished PreciceCallback::Init");
 }
 
-bool PreciceCallbackLayerCoe::Execute(FEModel &fem, int nreason) {
+bool PreciceCallbackSPT::Execute(FEModel &fem, int nreason) {
     	feLogInfo("PreciceCallback::Execute");
 
     	if (nreason == CB_INIT) {
@@ -300,7 +167,7 @@ bool PreciceCallbackLayerCoe::Execute(FEModel &fem, int nreason) {
 }
 
 // Read data from precice to febio
-void PreciceCallbackLayerCoe::ReadData(FEModel *fem) {
+void PreciceCallbackSPT::ReadData(FEModel *fem) {
     feLogInfo("PreciceCallback::ReadData");
                 
 	ReadScalarDataTemplate(fem, &FESolutesMaterialPoint::m_sourceterm, READ_DATA);
@@ -312,9 +179,9 @@ void PreciceCallbackLayerCoe::ReadData(FEModel *fem) {
 }
 
 // Write data from precice to febio
-void PreciceCallbackLayerCoe::WriteData(FEModel *fem) {
+void PreciceCallbackSPT::WriteData(FEModel *fem) {
     feLogInfo("PreciceCallback::WriteData");
-    //void function like overwrite internal values
+        //void function like overwrite internal values
 	UpdateCouplingData(fem);
 	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 0, WRITE_DATA);
 	WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 1, WRITE_DATAP);
