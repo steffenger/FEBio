@@ -34,6 +34,7 @@ SOFTWARE.*/
 #include <FECore/tens4d.h>
 #include <FECore/tools.h>
 #include <complex>
+#include <iostream>
 using namespace std;
 
 #ifndef SQR
@@ -833,7 +834,9 @@ vec3d FEMultiphasic::SoluteFlux(FEMaterialPoint& pt, const int sol)
 	
 	// solute flux j
 	vec3d j = (D*(w*(c/D0) - gradc*phiw))*kappa;
-	
+
+	//std::cout << "first term" <<  w.x << " " << w.y << " " << w.z << std::endl;
+        //std::cout << "second term" <<  j.x <<" "<< j.y << " " << j.z << std::endl;
 	return j;
 }
 

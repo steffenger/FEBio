@@ -10,9 +10,13 @@
 #include <FEBioMix/FESolutesMaterialPoint.h>
 #include <utility>
 
-#define PARTICIPANT_NAME "FEBio"
-#define ELEMENT_SET "CouplingDomain"
-#define MESH_NAME "FEBioMesh"
+#ifndef PRECICE_CALLBACK_H
+#define PRECICE_CALLBACK_H
+
+
+//#define PARTICIPANT_NAME "FEBio"
+//#define ELEMENT_SET "CouplingDomain"
+//#define MESH_NAME "FEBioMesh"
 #define READ_DATA "S_ext'"
 #define READ_DATA2 "P_ext'"
 #define READ_DATA3 "uec(PEX, P_ext)"
@@ -42,20 +46,24 @@ public:
 		template <typename T> void WriteScalarDataTemplate(FEModel *fem, T FESolutesMaterialPoint::*member, const std::string dataName);
 		template <typename T> void WriteVectorDataTemplate(FEModel *fem, std::vector<T> FESolutesMaterialPoint::*member, int index, const std::string dataName);
 		virtual void UpdateCouplingData(FEModel *fem);
-                void ReadBoundaryConditionData(FEModel *fem, int index, const std::string dataName);
+                void ReadBoundaryConditionData(FEModel *fem, int index, const std::string otherMesh, const std::string dataName);
                 void WriteBoundaryConditionData(FEModel *fem, int index, const std::string dataSet, const std::string dataName);
-                
-
+         
+         std::string PARTICIPANT_NAME;
+         std::string ELEMENT_SET;
+         std::string MESH_NAME;
 protected:
-    	precice::Participant *precice = NULL;
+    	//precice::Participant *precice = NULL;
     	int dimensions; 		// precice dimensions
     	int numberOfVertices; 		// number of vertices of muscle
     	std::vector<int> vertexIDs;	// vertex IDs of the muscle mesh
 
-		FEAnalysis *checkPointStep;
+        FEAnalysis *checkPointStep;
     	DumpMemStream dmp;
     	double checkpoint_time = 0;
     	FETimeStepController *checkpointTimeStepController = nullptr;
         //std::string PARTICIPANT_NAME;
         //std::string ELEMENT_SET;
 };
+
+#endif // PRECICE_CALLBACK_H

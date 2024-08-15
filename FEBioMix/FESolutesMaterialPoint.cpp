@@ -141,8 +141,8 @@ double FESolutesMaterialPoint::Osmolarity() const
 void FESolutesMaterialPoint::get_sourceterms(vector<double> &chat) {
   chat[0] = m_sourceterm;
   chat[1] = m_sourceterm2;
-  std::cout << m_sourceterm << std::endl;
-  std::cout << m_sourceterm2 << std::endl;
+  //std::cout << m_sourceterm << std::endl;
+  //std::cout << m_sourceterm2 << std::endl;
   //chat[1] = m_sourceterms[1];
 }
 

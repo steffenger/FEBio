@@ -32,6 +32,7 @@ SOFTWARE.*/
 #include <FECore/FEModel.h>
 #include <FECore/FEAnalysis.h>
 #include <FECore/FESolidDomain.h>
+#include <iostream>
 
 //-----------------------------------------------------------------------------
 BEGIN_FECORE_CLASS(FESoluteNaturalFlux, FESurfaceLoad)
@@ -289,11 +290,12 @@ void FESoluteNaturalFlux::LoadVector(FEGlobalVector& R)
         // evaluate desired natural solute flux
         vec3d dxt = mp.dxr ^ mp.dxs;
         double jn = c*(w*dxt);
+        //std::cout << "desired natural flux" << jn << std::endl;
         if (flux->m_bshellb) jn = -jn;
 
         // molar flow rate
         double f = jn* dt;
-
+        //std::cout << "molar flow rate" << f << std::endl;
         double H_i = dof_a.shape;
         fa[0] = H_i * f;
     });
@@ -445,7 +447,7 @@ void FESoluteNaturalFlux::StiffnessMatrix(FELinearSystem& LS)
         vec3d nu = dxt.normalized();
         double jn = c*(w*nu);
         if (flux->m_bshellb) jn = -jn;
-
+        //std::cout << "natural solute flux" << jn << std::endl;
         // calculate stiffness component
         vec3d t1 = nu*jn;
         vec3d t2 = mp.dxs*Gr_j - mp.dxr*Gs_j;

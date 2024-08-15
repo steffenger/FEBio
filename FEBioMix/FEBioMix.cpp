@@ -129,8 +129,9 @@ SOFTWARE.*/
 #include <FECore/FEModelUpdate.h>
 #include <FECore/FETimeStepController.h>
 //preCICE
-//#include "PreciceCallback.h"
+#include "PreciceCallback.h"
 #include "PreciceCallbackSPT.h"
+#include "PreciceCallbackSPTBody.h"
 //#include "PreciceCallbackLayerCoe.h"
 
 //-----------------------------------------------------------------------------
@@ -161,6 +162,8 @@ void FEBioMix::InitModule()
 	REGISTER_FECORE_CLASS(FEPorousNeoHookean, "porous neo-Hookean");
 	REGISTER_FECORE_CLASS(FEMixtureNormalTraction, "normal_traction");
 	REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallbackSPT, FECALLBACK_ID, "precice_callbackSPT");
+        REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallbackSPTBody, FECALLBACK_ID, "precice_callbackSPTBody");
+        REGISTER_FECORE_CLASS(MyLoadController, "toggle");
 	//REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallbackLayer, FECALLBACK_ID, "precice_callbackLayer");
         //REGISTER_FECORE_CLASS_EXPLICIT(PreciceCallbackLayerCoe, FECALLBACK_ID, "precice_callbackLayerCoe");
 

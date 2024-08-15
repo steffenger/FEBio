@@ -7,7 +7,7 @@
 #include "HelperProteinPosition.h"
 #include <utility>
 
-//function to update data which is used in coupling but not updated in the solver itself
+//function to update data which is used in the coupling but not updated in the solver step itself
 void PreciceCallbackSPT::UpdateCouplingData (FEModel *fem) {
        //create roadrunner template for every material point
        FEMesh &mesh = fem->GetMesh();
@@ -38,7 +38,7 @@ void PreciceCallbackSPT::UpdateCouplingData (FEModel *fem) {
                         double V = m.CurrentElementVolume(element);
                         //remove this for Center of element coupling
                         double V_gauss = V; //(element.GaussPoints());
-						ps.volume = V_gauss;
+			ps.volume = V_gauss;
                         
                         //double phiw = m_pMat->Porosity(mp);
                         
@@ -57,25 +57,29 @@ void PreciceCallbackSPT::UpdateCouplingData (FEModel *fem) {
 // Initialize the precice adapter
 void PreciceCallbackSPT::Init(FEModel *fem) {
     	feLogInfo("PreciceCallback::Init");
-        //PARTICIPANT_NAME = "FEBio";
-        //ELEMENT_SET = "CouplingDomain";
+        
+        //Initialize the strings
+        PARTICIPANT_NAME = "FEBio";
+        ELEMENT_SET = "CouplingDomain";
+        MESH_NAME = "FEBioMesh";
         /*
         //Define strings
         const std::string PARTICIPANT_NAME = "FEBio";
         const std::string MESH_NAME = "FEBioMesh";
         const std::string PARTICIPANT_NAME = "CouplingDomain";
         const char *config = "./precice-config.xml";
-        */
+        
         
         // Get config path from envrironment
 	const char *config = getenv("BFP_CONFIG");
 	if (!config) {
 		config = "./precice-config.xml";
-	}
+	}*/
         
     	// initialize precice
-    	this->precice = new precice::Participant(PARTICIPANT_NAME, config, 0, 1);
-    	this->dimensions = this->precice->getMeshDimensions(MESH_NAME);
+    	//this->precice = new precice::Participant(PARTICIPANT_NAME, "../precice-config.xml", 0, 1);
+        fem->participant = new precice::Participant(PARTICIPANT_NAME, "../precice-config.xml", 0, 1);
+    	this->dimensions = fem->participant->getMeshDimensions(MESH_NAME);
 
     	// Get material point positions
     	FEMesh &femMesh = fem->GetMesh();
@@ -85,10 +89,18 @@ void PreciceCallbackSPT::Init(FEModel *fem) {
 
     	// Initialize precice mesh
     	this->vertexIDs.resize(this->numberOfVertices);
-    	this->precice->setMeshVertices(MESH_NAME, vertexPositions, this->vertexIDs);
-
+    	fem->participant->setMeshVertices(MESH_NAME, vertexPositions, this->vertexIDs);
+        
+        //communicate initial data to preCICE
+        UpdateCouplingData(fem);
+        if(fem->participant->requiresInitialData()){
+        WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 0, WRITE_DATA);
+        WriteVectorDataTemplate(fem, &FESolutesMaterialPoint::m_ca, 1, WRITE_DATAP);
+        WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::volume, WRITE_DATAV);
+        WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::norm_position, WRITE_DATANP);
+        }
     	// Finish initializing precice
-    	precice->initialize();     
+    	fem->participant->initialize();     
 
 		//WriteScalarDataTemplate(fem, &FESolutesMaterialPoint::volume, WRITE_DATA3);
     	feLogInfo("Finished PreciceCallback::Init");
@@ -108,7 +120,7 @@ bool PreciceCallbackSPT::Execute(FEModel &fem, int nreason) {
 
 
     	} else if (nreason == CB_UPDATE_TIME) {
-    	    	if (this->precice->requiresWritingCheckpoint()) {
+    	    	if (fem.participant->requiresWritingCheckpoint()) {
     	    	    	feLogInfo("CB_UPDATE_TIME - Saving Checkpoint\n");
     	    	    	// Save
     	    	    	// this uses dmp.open(true,true) which leads to the time controller not beeing serialized
@@ -129,21 +141,21 @@ bool PreciceCallbackSPT::Execute(FEModel &fem, int nreason) {
     	    	    	fem.Serialize(this->dmp);*/
     	    	}
     	    	// advance timestep
-				double preciceDt = precice->getMaxTimeStepSize();
+				double preciceDt = fem.participant->getMaxTimeStepSize();
     	    	double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
     	    	feLogInfo("Current Simulation Time %f\n", fem.GetTime().currentTime);
     	    	feLogInfo("Timestep %f\n", dt);
     	    	fem.GetCurrentStep()->m_dt = dt;
     	} else if (nreason == CB_MAJOR_ITERS) {
-    	    	if (this->precice->isCouplingOngoing()) {
+    	    	if (fem.participant->isCouplingOngoing()) {
     	    	    	// Read and write precice data
     	    	    	this->ReadData(&fem);
     	    	    	this->WriteData(&fem);
-                        double preciceDt = precice->getMaxTimeStepSize();
+                        double preciceDt = fem.participant->getMaxTimeStepSize();
                         double dt = min(preciceDt, fem.GetCurrentStep()->m_dt);
 		        //double dt = this->precice->getMaxTimeStepSize();
-    	    	    	this->precice->advance(dt);
-    	    	    	if (this->precice->requiresReadingCheckpoint()) {
+    	    	    	fem.participant->advance(dt);
+    	    	    	if (fem.participant->requiresReadingCheckpoint()) {
     	    	    	    	feLogInfo("CB_MAJOR_ITERS - Restoring Checkpoint\n");
     	    	    	    	// Restore
     	    	    	    	// taken from FEAnalysis.cpp Line 475 ff
@@ -159,8 +171,8 @@ bool PreciceCallbackSPT::Execute(FEModel &fem, int nreason) {
     	    	    	}
     	    	}
     	} else if (nreason == CB_SOLVED) {
-    	    	this->precice->finalize();
-    	    	delete precice;
+    	    	fem.participant->finalize();
+    	    	//delete precice;
     	}
     	feLogInfo("Finished PreciceCallback::Execute");
     	return true;

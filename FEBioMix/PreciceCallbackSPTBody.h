@@ -10,9 +10,10 @@
 #include <FEBioMix/FESolutesMaterialPoint.h>
 #include <FEBioMix/PreciceCallback.h>
 #include <utility>
+#include <FECore/FELoadCurve.h>
 
-#ifndef PRECICE_CALLBACK_SPT_H
-#define PRECICE_CALLBACK_SPT_H
+#ifndef PRECICE_CALLBACK_SPTBODY_H
+#define PRECICE_CALLBACK_SPTBODY_H
 
 //#define PARTICIPANT_NAME "FEBio"
 //#define ELEMENT_SET "CouplingDomain"
@@ -33,9 +34,9 @@
 
 //add other variables
 
-class PreciceCallbackSPT : public PreciceCallback {
+class PreciceCallbackSPTBody : public PreciceCallback {
 public: 
-    PreciceCallbackSPT(FEModel *pfem) : PreciceCallback(pfem) {}//, CB_INIT | CB_UPDATE_TIME | CB_MAJOR_ITERS), dmp(*pfem) {}
+    PreciceCallbackSPTBody(FEModel *pfem) : PreciceCallback(pfem) {}//, CB_INIT | CB_UPDATE_TIME | CB_MAJOR_ITERS), dmp(*pfem) {}
     void UpdateCouplingData(FEModel *fem);
     void ReadData(FEModel *fem);
     void WriteData(FEModel *fem);
@@ -43,9 +44,58 @@ public:
     bool Execute(FEModel &fem, int nreason);
     //std::string PARTICIPANT_NAME;
     //std::string ELEMENT_SET;
-};  
+    std::string otherMesh;
+    //std::string ELEMENT_SET;
 
-#endif // PRECICE_CALLBACK_SPT_H
+};
+
+class MyLoadController : public FELoadController
+{
+public:
+    // constructor
+    MyLoadController(FEModel* fem);
+    // initialization (optional)
+    bool Init() override;
+protected:
+    // required override
+    double GetValue(double currentTime) override;
+    precice::Participant *precice = NULL;
+    int dimensions;                 // precice dimensions
+    int numberOfVertices;           // number of vertices of muscle
+    std::vector<int> vertexIDs;     // vertex IDs of the muscle mesh
+private:
+    std::string r_data;
+    std::string w_data;
+    double  m_val0;
+    double  m_val1;
+    double  m_duration;
+    DECLARE_FECORE_CLASS();
+
+};
+
+class MyReflowController : public FELoadController
+{
+public:
+    // constructor
+    MyReflowController(FEModel* fem);
+    // initialization (optional)
+    bool Init() override;
+protected:
+    // required override
+    double GetValue(double currentTime) override;
+
+
+private:
+    int index;
+    double  m_duration;
+    DECLARE_FECORE_CLASS();
+
+};
+
+double getOutflow(FEElementSet* elementSetOutflow, int index);
+
+
+#endif // PRECICE_CALLBACK_SPTBODY_H
 /*
 class PreciceCallbackLayerCoe : public FECallBack {
 public:

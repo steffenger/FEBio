@@ -35,6 +35,7 @@ SOFTWARE.*/
 #include "FECoreKernel.h"
 #include "DataStore.h"
 #include <string>
+#include <precice/precice.hpp>
 
 //-----------------------------------------------------------------------------
 // forward declarations
@@ -446,13 +447,16 @@ public:
 	void SetUnits(const char* szunits);
 	const char* GetUnits() const;
 
+public:
+        precice::Participant *participant = NULL;
+
 protected:
 	FEParamValue GetMeshParameter(const ParamString& paramString);
 
 private:
 	class Implementation;
 	Implementation*	m_imp;
-
+        
 	DECLARE_FECORE_CLASS();
 };
 
