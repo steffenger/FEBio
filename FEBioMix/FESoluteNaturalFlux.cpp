@@ -114,7 +114,7 @@ void FESoluteNaturalFlux::Update()
             // get surface element
             FESurfaceElement& el = m_psurf->Element(is);
             // get underlying solid element
-            FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0]);
+            FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0].pe);
             if (pe == nullptr) break;
             // get element data
             int neln = pe->Nodes();
@@ -189,7 +189,7 @@ void FESoluteNaturalFlux::LoadVector(FEGlobalVector& R)
         }
         nu.unit();
         // get underlying solid element
-        FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0]);
+        FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0].pe);
         if (pe == nullptr) break;
         // determine the solid domain to which this solid element belongs
         FESolidDomain* sdom = dynamic_cast<FESolidDomain*>(pe->GetMeshPartition());
@@ -263,7 +263,7 @@ void FESoluteNaturalFlux::LoadVector(FEGlobalVector& R)
         // get surface element
         FESurfaceElement& el = *mp.SurfaceElement();
         // get underlying solid element
-        FEElement* pe = el.m_elem[0];
+        FEElement* pe = el.m_elem[0].pe;
         FEMaterial* pm = GetFEModel()->GetMaterial(pe->GetMatID());
         // get the local solute id
         FESoluteInterface* psi = dynamic_cast<FESoluteInterface*>(pm);
@@ -326,7 +326,7 @@ void FESoluteNaturalFlux::StiffnessMatrix(FELinearSystem& LS)
         }
         nu.unit();
         // get underlying solid element
-        FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0]);
+        FESolidElement* pe = dynamic_cast<FESolidElement*>(el.m_elem[0].pe);
         if (pe == nullptr) break;
         // determine the solid domain to which this solid element belongs
         FESolidDomain* sdom = dynamic_cast<FESolidDomain*>(pe->GetMeshPartition());
@@ -416,7 +416,7 @@ void FESoluteNaturalFlux::StiffnessMatrix(FELinearSystem& LS)
         // get surface element
         FESurfaceElement& el = *mp.SurfaceElement();
         // get underlying solid element
-        FEElement* pe = el.m_elem[0];
+        FEElement* pe = el.m_elem[0].pe;
         FEMaterial* pm = GetFEModel()->GetMaterial(pe->GetMatID());
         // get the local solute id
         FESoluteInterface* psi = dynamic_cast<FESoluteInterface*>(pm);

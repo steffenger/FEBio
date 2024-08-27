@@ -679,7 +679,15 @@ void FEModel::Update()
 	// update mesh
 	FEMesh& mesh = GetMesh();
 	const FETimeInfo& tp = GetTime();
-	mesh.Update(tp);
+	try {
+		mesh.Update(tp);
+	}
+	catch (NegativeJacobianDetected e)
+	{
+		// for debug modes we do want to see inverted elements on the post side
+		DoCallback(CB_MODEL_UPDATE);
+		throw;
+	}
 
 	// set the mesh update flag to false
 	// If any load sets this to true, the
@@ -995,7 +1003,11 @@ bool FEModel::InitMesh()
 
 	// Initialize shell data
 	// This has to be done before the domains are initialized below
-	InitShells();
+	if (!InitShells())
+	{
+		feLogError("Errors found during initialization of shells.");
+		return false;
+	}
 
 	// reset data
 	// TODO: Not sure why this is here
@@ -1032,12 +1044,39 @@ bool FEModel::InitMesh()
 		if (mesh.Surface(i).Init() == false) return false;
 	}
 
+	// do some additional mesh validation
+	ValidateMesh();
+
 	// All done
 	return true;
 }
 
+void FEModel::ValidateMesh()
+{
+	FEMesh& mesh = GetMesh();
+
+	for (int i = 0; i < mesh.NodeSets(); ++i)
+	{
+		FENodeSet* ns = mesh.NodeSet(i);
+		if (ns->Size() == 0)
+		{
+			std::string name = ns->GetName();
+			feLogWarning("The nodeset \"%s\" is empty!", name.c_str());
+		}
+	}
+	for (int i = 0; i < mesh.Surfaces(); ++i)
+	{
+		FESurface& surf = mesh.Surface(i);
+		if (surf.Elements() == 0)
+		{
+			std::string name = surf.GetName();
+			feLogWarning("The surface \"%s\" is empty!", name.c_str());
+		}
+	}
+}
+
 //-----------------------------------------------------------------------------
-void FEModel::InitShells()
+bool FEModel::InitShells()
 {
 	FEMesh& mesh = GetMesh();
 
@@ -1093,9 +1132,11 @@ void FEModel::InitShells()
 		if (dom.Class() == FE_DOMAIN_SHELL)
 		{
 			FEShellDomain& shellDom = static_cast<FEShellDomain&>(dom);
-			shellDom.InitShells();
+			if (!shellDom.InitShells()) return false;
 		}
 	}
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1960,7 +2001,7 @@ void FEModel::Logf(int ntag, const char* msg, ...)
 	// make the message
 	char sztxt[2048] = { 0 };
 	va_start(args, msg);
-	vsprintf(sztxt, msg, args);
+	vsnprintf(sztxt, sizeof(sztxt), msg, args);
 	va_end(args);
 
 	Log(ntag, sztxt);

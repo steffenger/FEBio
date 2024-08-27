@@ -101,6 +101,9 @@ FEMultiphasicSolver::FEMultiphasicSolver(FEModel* pfem) : FENewtonSolver(pfem),
 
 	m_msymm = REAL_UNSYMMETRIC; // assume non-symmetric stiffness matrix by default
 
+    // Preferred strategy is Broyden's method
+    SetDefaultStrategy(QN_BROYDEN);
+    
 	m_forcePositive = true;	// force all concentrations to remain positive
 
 	m_solutionNorm.push_back(ConvergenceInfo());
@@ -407,7 +410,7 @@ void FEMultiphasicSolver::PrepStep()
 	for (int i = 0; i < fem.SurfacePairConstraints(); ++i)
 	{
 		FEContactInterface& ci = dynamic_cast<FEContactInterface&>(*fem.SurfacePairConstraint(i));
-		if (ci.IsActive() && (ci.m_laugon == 1)) m_baugment = true;
+		if (ci.IsActive() && (ci.m_laugon == FECore::AUGLAG_METHOD)) m_baugment = true;
 	}
 
 	// see if we have to do nonlinear constraint augmentations

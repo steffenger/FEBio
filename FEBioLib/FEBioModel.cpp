@@ -565,6 +565,8 @@ void FEBioModel::WritePlot(unsigned int nevent)
 				}
 				isStride = ((pstep->m_ntimesteps - nmin) % pstep->m_nplot_stride) == 0;
 
+				bool isMustPoint = (pstep->m_timeController && (pstep->m_timeController->m_nmust >= 0));
+
 				switch (nevent)
 				{
 				case CB_MINOR_ITERS:
@@ -578,8 +580,8 @@ void FEBioModel::WritePlot(unsigned int nevent)
 				}
 				break;
 				case CB_MAJOR_ITERS:
-					if ((nplt == FE_PLOT_MAJOR_ITRS) && inRange && isStride) bout = true;
-					if ((nplt == FE_PLOT_MUST_POINTS) && (pstep->m_timeController) && (pstep->m_timeController->m_nmust >= 0)) bout = true;
+					if ((nplt == FE_PLOT_MAJOR_ITRS) && inRange && (isStride || isMustPoint)) bout = true;
+					if ((nplt == FE_PLOT_MUST_POINTS) && isMustPoint) bout = true;
 					if (nplt == FE_PLOT_AUGMENTATIONS) bout = true;
 					break;
 				case CB_AUGMENT:
@@ -760,7 +762,12 @@ void FEBioModel::Log(int ntag, const char* szmsg)
 	if (m_createReport)
 	{
 		string msg = removeNewLines(szmsg);
-		msg.push_back('\n');
+
+		double t = GetCurrentTime();
+		stringstream ss;
+		ss << msg << " (t = " << t << ")\n";
+		msg = ss.str();
+
 		if (ntag == 1) m_report += "Warning: " + msg;
 		if (ntag == 2) m_report += "Error: " + msg;
 	}
@@ -1388,7 +1395,7 @@ void FEBioModel::SerializeIOData(DumpStream &ar)
 			// set the software string
 			const char* szver = febio::getVersionString();
 			char szbuf[256] = { 0 };
-			sprintf(szbuf, "FEBio %s", szver);
+			snprintf(szbuf, sizeof(szbuf), "FEBio %s", szver);
 			xplt->SetSoftwareString(szbuf);
 
 			m_plot = xplt;
@@ -1480,7 +1487,7 @@ bool FEBioModel::InitPlotFile()
 		// set the software string
 		const char* szver = febio::getVersionString();
 		char szbuf[256] = { 0 };
-		sprintf(szbuf, "FEBio %s", szver);
+		snprintf(szbuf, sizeof(szbuf), "FEBio %s", szver);
 		xplt->SetSoftwareString(szbuf);
 
 		m_plot = xplt;
@@ -1640,6 +1647,12 @@ bool FEBioModel::Reset()
 	// re-initialize the log file
 	if (m_logLevel != 0)
 	{
+		// TODO: I added this so that log files can be compared using the reset_test
+		// but this messes up the output for optimization problems.
+		// I want the optimization create its own log file, so it is decoupled from the model's
+		// log file. But since all the logging stuff lives in FEBioLib, I can't do this yet.
+//		if (m_log.is_valid()) m_log.close();
+
 		if (InitLogFile() == false) return false;
 	}
 

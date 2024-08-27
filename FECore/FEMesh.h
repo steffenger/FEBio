@@ -29,6 +29,7 @@ SOFTWARE.*/
 #pragma once
 #include "FENode.h"
 #include "FENodeElemList.h"
+#include "FEElemElemList.h"
 #include "FENodeSet.h"
 #include "FEFacetSet.h"
 #include "FEDiscreteSet.h"
@@ -49,6 +50,25 @@ class FEDataMap;
 class DumpStream;
 
 //---------------------------------------------------------------------------------------
+// Helper class for faster lookup of nodes based on their ID 
+class FECORE_API FENodeLUT
+{
+public:
+	FENodeLUT(FEMesh& mesh);
+
+	// Find an element from its ID
+	FENode* Find(int nodeID) const;
+
+	// return an element's zero-based index
+	int FindIndex(int nodeID) const;
+
+private:
+	vector<int>		m_node;
+	int				m_minID, m_maxID;
+	FEMesh*			m_mesh;
+};
+
+//---------------------------------------------------------------------------------------
 // Helper class for faster lookup of elements based on their ID 
 class FECORE_API FEElementLUT
 {
@@ -56,10 +76,14 @@ public:
 	FEElementLUT(FEMesh& mesh);
 
 	// Find an element from its ID
-	FEElement* Find(int nid);
+	FEElement* Find(int elemID) const;
+
+	// return an element's zero-based index
+	int FindIndex(int elemID) const;
 
 private:
 	vector<FEElement*>	m_elem;
+	vector<int>			m_elid;
 	int					m_minID, m_maxID;
 };
 
@@ -124,20 +148,23 @@ public:
 	//! Finds a node from a given ID
 	FENode* FindNodeFromID(int nid);
 
+	//! Finds node index from a given ID
+	int FindNodeIndexFromID(int nid);
+
 	//! return an element (expensive way!)
 	FEElement* Element(int i);
 
 	//! Finds an element from a given ID
-	FEElement* FindElementFromID(int nid);
+	FEElement* FindElementFromID(int elemID);
+	
+	int FindElementIndexFromID(int elemID);
 
 	//! Finds the solid element in which y lies
 	FESolidElement* FindSolidElement(vec3d y, double r[3]);
 
-	FENodeElemList& NodeElementList()
-	{
-		if (m_NEL.Size() != m_Node.size()) m_NEL.Create(*this);
-		return m_NEL;
-	}
+	FENodeElemList& NodeElementList();
+
+	FEElemElemList& ElementElementList();
 
 	//! See if all elements are of a particular shape
 	bool IsType(FE_Element_Shape eshape);
@@ -279,7 +306,10 @@ private:
 	FEBoundingBox		m_box;	//!< bounding box
 
 	FENodeElemList	m_NEL;
-	FEElementLUT*	m_LUT;
+	FEElementLUT*	m_ELT;
+	FENodeLUT*		m_NLT;
+
+	FEElemElemList	m_EEL;
 
 	FEModel*	m_fem;
 private:
