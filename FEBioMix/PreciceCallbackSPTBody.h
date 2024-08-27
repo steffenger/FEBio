@@ -64,6 +64,7 @@ protected:
     int numberOfVertices;           // number of vertices of muscle
     std::vector<int> vertexIDs;     // vertex IDs of the muscle mesh
 private:
+    int index;
     std::string r_data;
     std::string w_data;
     double  m_val0;

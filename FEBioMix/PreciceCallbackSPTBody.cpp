@@ -274,7 +274,8 @@ void PreciceCallbackSPTBody::WriteData(FEModel *fem) {
  END_FECORE_CLASS();*/
 
 MyLoadController::MyLoadController(FEModel *fem) : FELoadController(fem)
-{   m_val0 = 0.0;
+{   index = 0.0;
+    m_val0 = 0.0;
     m_val1 = 1.0;
     m_duration = 1.0;
 }
@@ -325,18 +326,21 @@ double MyLoadController::GetValue(double currentTime)
     double preciceDt = fem->participant->getMaxTimeStepSize();
     double dt = min(preciceDt, fem->GetCurrentStep()->m_dt);
     std::cout << "dt " << dt << std::endl;
-    fem->participant->readData("WholeBodyMesh", "S_ext_inflow", otherVertexIDs, dt, data);
+    fem->participant->readData("WholeBodyMesh", r_data, otherVertexIDs, dt, data);
     
     std::vector<double> write_data(dataDim * otherMeshSize);
     
     FEMesh &mesh = fem->GetMesh();
     FEElementSet* elementSetOutflow = mesh.FindElementSet("outflow");
-    write_data[0] = getOutflow(elementSetOutflow, 0); //data[0]*0.9;
-    fem->participant->writeData("WholeBodyMesh", "S_ext_outflow", otherVertexIDs, write_data);
+    write_data[0] = getOutflow(elementSetOutflow, index); //data[0]*0.9;
+    std::cout << "index " << index << std::endl; 
+    fem->participant->writeData("WholeBodyMesh", w_data, otherVertexIDs, write_data);
+    std::cout << w_data << r_data << std::endl;
     std::cout << "write_data "<< write_data[0] << std::endl;
     std::cout << "data factor " << write_data[0]/data[0] << std::endl;
+    std::cout << "data size" << data.size() << std::endl;
 
-    std::cout << "test4.1 "<< dataDim << std::endl;
+    //std::cout << "test4.1 "<< dataDim << std::endl;
     //test
     FESurface *SurfaceIn = mesh.FindSurface("Soluteflux3");
     FESurface *SurfaceOut = mesh.FindSurface("SoluteNaturalFlux1");
@@ -397,6 +401,7 @@ double MyLoadController::GetValue(double currentTime)
   }
 
 BEGIN_FECORE_CLASS(MyLoadController, FELoadController)
+    ADD_PARAMETER(index, "id");
     ADD_PARAMETER(r_data, "read_data");
     ADD_PARAMETER(w_data, "write_data");
     ADD_PARAMETER(m_duration, "duration");
@@ -467,7 +472,7 @@ REGISTER_FECORE_CLASS(MyReflowController, "reflow");
 
 double getOutflow(FEElementSet* elementSetOutflow, int index){
   double outflow;
-  double conc;
+  double conc = 0;
   double f;
   double surface_jn;
   //FEModel& fem = *GetFEModel();
@@ -484,7 +489,7 @@ double getOutflow(FEElementSet* elementSetOutflow, int index){
      FEMaterialPoint &materialPoint = *element.GetMaterialPoint(j);
      FESolutesMaterialPoint &ps = *materialPoint.ExtractData<FESolutesMaterialPoint>();
      outflow += sqrt(ps.m_j[index].x*ps.m_j[index].x + ps.m_j[index].y*ps.m_j[index].y + ps.m_j[index].z*ps.m_j[index].z);
-     conc = ps.m_ca[index];
+     conc += ps.m_ca[index];
   }
  }
  
@@ -528,8 +533,8 @@ double getOutflow(FEElementSet* elementSetOutflow, int index){
 
   //std::cout << "c und w " << w << c << std::endl;
   double outflow_return = outflow/(1);
-  std::cout << "outflow " << outflow_return << "conc " << conc << std::endl;
+  //std::cout << "outflow " << outflow_return << "conc " << conc << std::endl;
   
-  return outflow_return;
+  return conc/8;
 }
 
